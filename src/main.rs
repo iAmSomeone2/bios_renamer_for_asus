@@ -1,9 +1,30 @@
-
+// MIT License
+//
+// Copyright (c) 2021 Brenden Davidson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 use std::env;
 use std::fs;
 use std::path::Path;
 use std::ffi::OsStr;
+use std::process::exit;
 
 fn rename_file(file_name: &String) -> Option<String> {
     //! Takes the original file name of the form "{}-{}-\<chipset\>-{}-{}-ASUS-\<version\>" -- where '{}'
@@ -12,7 +33,6 @@ fn rename_file(file_name: &String) -> Option<String> {
 
     let segments: Vec<&str> = file_name.split("-").collect();
     // Use the first letter of the first 2 segments
-    // let mut output = get_first_char(segments[0]) + &*get_first_char(segments[1]);
     let p0 = segments[0].chars().nth(0)?;
     let p1 = segments[1].chars().nth(0)?;
 
@@ -41,9 +61,10 @@ fn success_msg(new_path: &String, old_path: &String) -> String {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
-    // if args.len() < 2 {
-    //     return Err("Error: file name argument missing.");
-    // }
+    if args.len() < 2 {
+        eprintln!("Error: input file required.");
+        exit(1);
+    }
 
     let file_path = Path::new(args[1].as_str());
     let ext = file_path.extension()

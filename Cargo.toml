@@ -3,6 +3,7 @@ name = "asus_bios_renamer"
 version = "1.0.0"
 authors = ["Brenden Davidson <brenden.davidson@audonomic.com>"]
 edition = "2018"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
