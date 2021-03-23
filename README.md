@@ -14,10 +14,10 @@ the file.
 1. Navigate to the directory containing the application.
 2. Make the application executable if it is not:
    ``` bash
-   chmod +x ./asus_bios_renamer 
+   chmod +x ./bios_renamer_for_asus 
    ```
 3. Call the application with the path to the BIOS file as the first argument:
     ``` bash
-    ./asus_bios_renamer <path-to-BIOS-file>
+    ./bios_renamer_for_asus <path-to-BIOS-file>
     ```
 4. Follow the instructions given by the application.
