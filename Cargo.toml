@@ -1,5 +1,5 @@
 [package]
-name = "asus_bios_renamer"
+name = "bios_renamer_for_asus"
 version = "1.0.0"
 authors = ["Brenden Davidson <brenden.davidson@audonomic.com>"]
 edition = "2018"

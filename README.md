@@ -1,4 +1,4 @@
-# Asus BIOS Renamer
+# BIOS Renamer for Asus Motherboards
 
 Cross-platform Rust implementation of Asus' Windows-only BIOS renamer utility.
 
