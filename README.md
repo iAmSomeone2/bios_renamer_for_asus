@@ -17,7 +17,7 @@ brew install rust
 ### Confirm Rust Installed
 Once you install rust, you will have the build toolchain. You can confirm that by running these commands.
 ``` cargo --version
-# cargo 1.65.0 (4bc8f24d3 2022-10-20) 
+# cargo 1.66.0 (d65d197ad 2022-11-15)
 
 rustc --version
 # rustc 1.65.0
