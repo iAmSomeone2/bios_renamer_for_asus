@@ -14,7 +14,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 brew install rust 
 ```
 
-### Confirm Rust Installed
+### Confirm Rust is Installed
 Once you install rust, you will have the build toolchain. You can confirm that by running these commands.
 ``` cargo --version
 # cargo 1.66.0 (d65d197ad 2022-11-15)
