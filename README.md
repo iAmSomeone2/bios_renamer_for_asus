@@ -55,7 +55,7 @@ This will work on linux and mac
 ```bash
 #!/bin/bash
 ## install rust
-curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ## clone repo
 git clone https://github.com/iAmSomeone2/bios_renamer_for_asus.git
 ## create binary
