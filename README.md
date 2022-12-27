@@ -5,7 +5,7 @@ Cross-platform Rust implementation of Asus' Windows-only BIOS renamer utility.
 ## Usage
 Before you can use this, you need to compile the code to create an executable.
 
-### Install Rust on Linux/ Mac / etc
+### Install Rust on Unix-like OSs: Linux, macOS, etc.
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
