@@ -20,7 +20,7 @@ Once you install rust, you will have the build toolchain. You can confirm that b
 # cargo 1.66.0 (d65d197ad 2022-11-15)
 
 rustc --version
-# rustc 1.65.0
+# rustc 1.66.0 (69f9c33d7 2022-12-12)
 ```
 
 ## Build Executable
