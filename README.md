@@ -7,7 +7,7 @@ Before you can use this, you need to compile the code to create an executable.
 
 ### Install Rust on Linux/ Mac / etc
 ```bash
-curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 ### You can even install rust with homebrew on MacOS
 ```bash
