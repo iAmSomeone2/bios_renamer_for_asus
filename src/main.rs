@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2021 Brenden Davidson
+// Copyright (c) 2021-2022 Brenden Davidson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,69 +20,68 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::env;
-use std::fs;
-use std::path::Path;
-use std::ffi::OsStr;
+use clap::Parser;
+use std::fs::File;
+use std::path::PathBuf;
 use std::process::exit;
 
-fn rename_file(file_name: &String) -> Option<String> {
-    //! Takes the original file name of the form "{}-{}-\<chipset\>-{}-{}-ASUS-\<version\>" -- where '{}'
-    //! represents a word in the product name -- and converts it to a form that the BIOS will
-    //! recognize.
+mod bios;
 
-    let segments: Vec<&str> = file_name.split("-").collect();
-    // Use the first letter of the first 2 segments
-    let p0 = segments[0].chars().nth(0)?;
-    let p1 = segments[1].chars().nth(0)?;
+/// Cross-platform BIOS file renamer for ASUS motherboards
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// Path to BIOS file to operate on
+    bios_path: PathBuf,
+    // Target output directory for the renamed file
+    // #[arg(short, long)]
+    // out_dir: Option<PathBuf>,
 
-    // Get chipset name
-    let chipset = segments[2];
-
-    // Use the first letters from the next 2 segments
-    let p2 = segments[3].chars().nth(0)?;
-    let p3 = segments[4].chars().nth(0)?;
-
-    let output = format!("{0}{1}{2}{3}{4}", p0, p1, chipset, p2, p3);
-
-    Some(output)
+    // Copy the BIOS file instead of moving it
+    // #[arg(short, long, action = ArgAction::SetTrue)]
+    // copy: Option<bool>,
 }
 
-fn success_msg(new_path: &String, old_path: &String) -> String {
-    let mut msg = format!("{0} ===> {1}\n\n", old_path, new_path);
+fn main() {
+    let cli = Cli::parse();
 
-    msg = format!(
-        "{0}This file has been renamed to {1}. To use USB BIOS Flashback, \
-        copy {1} to the root of your USB flash drive.", msg, new_path
-    );
+    let bios_path = match cli.bios_path.canonicalize() {
+        Ok(path) => path,
+        Err(why) => {
+            eprintln!("ERROR: {} at path {}", why, cli.bios_path.display());
+            exit(1);
+        }
+    };
 
-    return msg;
-}
+    let mut bios_file = match File::open(&bios_path) {
+        Ok(file) => file,
+        Err(why) => {
+            eprintln!("ERROR: couldn't open {}: {}", &cli.bios_path.display(), why);
+            exit(1);
+        }
+    };
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Error: input file required.");
-        exit(1);
-    }
+    let bios_info = match bios::BiosInfo::from_file(&mut bios_file) {
+        Ok(info) => info,
+        Err(why) => {
+            eprintln!("ERROR: {}", why);
+            exit(2);
+        }
+    };
+    // Close the file by dropping it
+    drop(bios_file);
 
-    let file_path = Path::new(args[1].as_str());
-    let ext = file_path.extension()
-        .unwrap_or(OsStr::new("CAP")).to_str().unwrap();
-    let file_name = String::from(file_path.file_stem().unwrap().to_str().unwrap());
-    let parent_dir = file_path.parent()
-        .unwrap_or(Path::new("./"));
-    let new_name = format!("{}.{}", rename_file(&file_name).unwrap(), ext );
-    let new_path = parent_dir.join(&new_name);
+    // TODO: Add support for target directory and copy mode
 
-    // Move the file
-    fs::rename(&file_path, &new_path)?;
-
-    let old_path_str = String::from(file_path.to_str().unwrap_or(&*file_name));
-
-    let new_path_str = String::from(new_path.to_str().unwrap_or(&*new_name));
-
-    println!("{}", success_msg(&new_path_str, &old_path_str));
-
-    Ok(())
+    // Rename source file
+    let output_path = PathBuf::from(bios_info.get_expected_name());
+    match std::fs::rename(&bios_path, &output_path) {
+        Ok(_) => {
+            println!("File renamed to: {}", &output_path.display());
+        }
+        Err(why) => {
+            eprintln!("ERROR: Failed to rename file: {}", why);
+            exit(3);
+        }
+    };
 }

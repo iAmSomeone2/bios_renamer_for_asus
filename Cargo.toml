@@ -1,11 +1,13 @@
 [package]
 name = "bios_renamer_for_asus"
 version = "1.0.0"
-authors = ["Brenden Davidson <brenden.davidson@audonomic.com>"]
-edition = "2018"
+authors = ["Brenden Davidson <davidson.brenden15@gmail.com>"]
+edition = "2021"
 license = "MIT"
-readme="README.md"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chrono = "0.4.23"
+clap = { version = "4.0.32", features = ["derive"] }
