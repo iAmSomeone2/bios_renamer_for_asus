@@ -23,7 +23,7 @@
 use clap::Parser;
 use std::fs::File;
 use std::path::PathBuf;
-use std::process::exit;
+use std::process::ExitCode;
 
 mod bios;
 
@@ -42,14 +42,14 @@ struct Cli {
     // copy: Option<bool>,
 }
 
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
     let bios_path = match cli.bios_path.canonicalize() {
         Ok(path) => path,
         Err(why) => {
             eprintln!("ERROR: {} at path {}", why, cli.bios_path.display());
-            exit(1);
+            return ExitCode::FAILURE;
         }
     };
 
@@ -57,15 +57,29 @@ fn main() {
         Ok(file) => file,
         Err(why) => {
             eprintln!("ERROR: couldn't open {}: {}", &cli.bios_path.display(), why);
-            exit(1);
+            return ExitCode::FAILURE;
         }
     };
+
+    // Check file validity
+    let is_valid = match bios::is_file_valid(&bios_file) {
+        Ok(is_valid) => is_valid,
+        Err(why) => {
+            eprintln!("ERROR: failed to test validity of file: {}", why);
+            return ExitCode::FAILURE;
+        }
+    };
+
+    if !is_valid {
+        eprintln!("INVALID FILE: provided file is not the expected size");
+        return ExitCode::FAILURE;
+    }
 
     let bios_info = match bios::BiosInfo::from_file(&mut bios_file) {
         Ok(info) => info,
         Err(why) => {
             eprintln!("ERROR: {}", why);
-            exit(2);
+            return ExitCode::FAILURE;
         }
     };
     // Close the file by dropping it
@@ -81,7 +95,9 @@ fn main() {
         }
         Err(why) => {
             eprintln!("ERROR: Failed to rename file: {}", why);
-            exit(3);
+            return ExitCode::FAILURE;
         }
     };
+
+    ExitCode::SUCCESS
 }
