@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -33,13 +33,14 @@ mod bios;
 struct Cli {
     /// Path to BIOS file to operate on
     bios_path: PathBuf,
-    // Target output directory for the renamed file
-    // #[arg(short, long)]
-    // out_dir: Option<PathBuf>,
 
-    // Copy the BIOS file instead of moving it
-    // #[arg(short, long, action = ArgAction::SetTrue)]
-    // copy: Option<bool>,
+    /// Target output directory for the renamed file
+    #[arg(short, long)]
+    out_dir: Option<PathBuf>,
+
+    /// Copy the BIOS file instead of moving it
+    #[arg(short, long, action = ArgAction::SetTrue)]
+    copy: Option<bool>,
 }
 
 fn main() -> ExitCode {
@@ -85,19 +86,49 @@ fn main() -> ExitCode {
     // Close the file by dropping it
     drop(bios_file);
 
-    // TODO: Add support for target directory and copy mode
-
-    // Rename source file
-    let output_path = PathBuf::from(bios_info.get_expected_name());
-    match std::fs::rename(&bios_path, &output_path) {
-        Ok(_) => {
-            println!("File renamed to: {}", &output_path.display());
-        }
-        Err(why) => {
-            eprintln!("ERROR: Failed to rename file: {}", why);
-            return ExitCode::FAILURE;
+    // Handle the user setting a target directory
+    let mut output_path = match cli.bios_path.parent() {
+        Some(dir) => dir.to_owned(),
+        None => {
+            let mut out = PathBuf::new();
+            out.push(".");
+            out
         }
     };
+    match cli.out_dir {
+        Some(dir) => {
+            output_path = dir;
+        }
+        None => {}
+    }
+
+    // Rename source file
+    output_path.push(bios_info.get_expected_name());
+    println!("Output path: {}", &output_path.display());
+
+    let should_copy = cli.copy.unwrap_or(false);
+
+    if should_copy {
+        match std::fs::copy(&bios_path, &output_path) {
+            Ok(_) => {
+                println!("BIOS file copied to: {}", &output_path.display());
+            }
+            Err(why) => {
+                eprintln!("ERROR: Failed to copy file: {}", why);
+                return ExitCode::FAILURE;
+            }
+        };
+    } else {
+        match std::fs::rename(&bios_path, &output_path) {
+            Ok(_) => {
+                println!("BIOS file moved to: {}", &output_path.display());
+            }
+            Err(why) => {
+                eprintln!("ERROR: Failed to move file: {}", why);
+                return ExitCode::FAILURE;
+            }
+        };
+    }
 
     ExitCode::SUCCESS
 }
