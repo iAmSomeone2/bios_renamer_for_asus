@@ -25,7 +25,6 @@ use std::{
     fs::File,
     io::{BufReader, Read},
     ops::Range,
-    path::Path,
 };
 
 const EXPECTED_FILE_SIZE: u64 = 33558528;
@@ -57,12 +56,16 @@ const CAP_NAME_END: usize = 0x8F;
 pub struct BiosInfo {
     /// Name of target motherboard
     board_name: String,
+
     /// Brand of motherboard
     brand: String,
+
     /// Reported BIOS build date
     build_date: NaiveDate,
+
     /// Reported build number
     build_number: String,
+
     /// Filename the target motherboard expects this file to be named
     ///
     /// # Examples:
@@ -105,22 +108,17 @@ impl BiosInfo {
 
         reader.seek_relative(BIOS_INFO_START as i64)?;
         reader.take(read_size as u64).read_to_end(&mut info_chunk)?;
-        // println!("Read {n} bytes from input file.");
 
         // Read each field out of the info chunk
         let board_name = bytes_to_string(&info_chunk, BOARD_NAME_START..BOARD_NAME_END);
-        // println!("Board name: {board_name}");
         let brand = trim_after_null(&String::from_utf8_lossy(
             &info_chunk[BRAND_NAME_START..BRAND_NAME_END],
         ));
-        // println!("Brand: {brand}");
 
         let build_date =
             trim_after_null(&String::from_utf8_lossy(&info_chunk[DATE_START..DATE_END]));
-        // println!("Build date: {}", build_date);
         let build_date =
             NaiveDate::parse_from_str(&build_date, "%m/%d/%Y").unwrap_or(NaiveDate::default());
-        // println!("Parsed build date: {}", build_date);
 
         let build_num = trim_after_null(&String::from_utf8_lossy(
             &info_chunk[BUILD_NUMBER_START..BUILD_NUMBER_END],
