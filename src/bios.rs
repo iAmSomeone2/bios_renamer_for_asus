@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2021-2022 Brenden Davidson
+// Copyright (c) 2021-2023 Brenden Davidson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,29 +26,42 @@ use std::{
     io::{BufReader, ErrorKind, Read},
 };
 
-/// Byte array used to search for the start of the BIOS info block
-const BIOS_INFO_HEADER: [u8; 9] = [0x24, 0x42, 0x4F, 0x4F, 0x54, 0x45, 0x46, 0x49, 0x24]; // "$BOOTEFI$"
 const INFO_HEADER_LEN: usize = 9;
+/// Byte array used to search for the start of the BIOS info block
+const BIOS_INFO_HEADER: [u8; INFO_HEADER_LEN] =
+    [0x24, 0x42, 0x4F, 0x4F, 0x54, 0x45, 0x46, 0x49, 0x24]; // "$BOOTEFI$"
+/// Total size of the info block minus the header
 const BIOS_INFO_SIZE: usize = 158;
 
+/// All recent BIOS/UEFI files from ASUS are this exact size. Unused space in the file is filled with 0xFF values.
 const EXPECTED_FILE_SIZE: u64 = 33558528;
 
+/// Where the board name begins offset from the end of the info header
 const BOARD_NAME_OFFSET: usize = 0x05;
+/// Number of bytes reserved for the board name in the info block
 const BOARD_NAME_LEN: usize = 60;
 
+/// Where the brand name begins offset from the end of the info header
 const BRAND_NAME_OFFSET: usize = 0x41;
+/// Number of bytes reserved for the brand name in the info block
 const BRAND_NAME_LEN: usize = 20;
 
+/// Where the build date begins offset from the end of the info header
 const DATE_OFFSET: usize = 0x56;
+/// Number of bytes reserved for the build date in the info block
 const DATE_LEN: usize = 10;
 
+/// Where the build number begins offset from the end of the info header
 const BUILD_NUMBER_OFFSET: usize = 0x61;
+/// Number of bytes reserved for the build number in the info block
 const BUILD_NUMBER_LEN: usize = 14;
 
+/// Where the CAP file name begins offset from the end of the info header
 const CAP_NAME_OFFSET: usize = 0x88;
+/// Number of bytes reserved for the CAP file name in the info block
 const CAP_NAME_LEN: usize = 12;
 
-/// Information describing the BIOS/EFI file as read from the `$BOOTEFI$` block.
+/// Information describing the BIOS/EFI file as read from its info block.
 #[derive(Debug)]
 pub struct BiosInfo {
     /// Name of target motherboard
