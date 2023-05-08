@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2021-2022 Brenden Davidson
+// Copyright (c) 2021-2023 Brenden Davidson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,35 +23,45 @@
 use chrono::NaiveDate;
 use std::{
     fs::File,
-    io::{BufReader, Read},
-    ops::Range,
+    io::{BufReader, ErrorKind, Read},
 };
 
+const INFO_HEADER_LEN: usize = 9;
+/// Byte array used to search for the start of the BIOS info block
+const BIOS_INFO_HEADER: [u8; INFO_HEADER_LEN] =
+    [0x24, 0x42, 0x4F, 0x4F, 0x54, 0x45, 0x46, 0x49, 0x24]; // "$BOOTEFI$"
+/// Total size of the info block minus the header
+const BIOS_INFO_SIZE: usize = 158;
+
+/// All recent BIOS/UEFI files from ASUS are this exact size. Unused space in the file is filled with 0xFF values.
 const EXPECTED_FILE_SIZE: u64 = 33558528;
 
-/// Byte offset from start of .CAP file where the BIOS info resides
-const BIOS_INFO_START: usize = 0x10000FA;
-/// Address of last BIOS info byte in the .CAP file
-const BIOS_INFO_END: usize = 0x100018B;
+/// Where the board name begins offset from the end of the info header
+const BOARD_NAME_OFFSET: usize = 0x05;
+/// Number of bytes reserved for the board name in the info block
+const BOARD_NAME_LEN: usize = 60;
 
-// TODO: Finish documentation
+/// Where the brand name begins offset from the end of the info header
+const BRAND_NAME_OFFSET: usize = 0x41;
+/// Number of bytes reserved for the brand name in the info block
+const BRAND_NAME_LEN: usize = 20;
 
-const BOARD_NAME_START: usize = 0x00;
-const BOARD_NAME_END: usize = 0x3B;
+/// Where the build date begins offset from the end of the info header
+const DATE_OFFSET: usize = 0x56;
+/// Number of bytes reserved for the build date in the info block
+const DATE_LEN: usize = 10;
 
-const BRAND_NAME_START: usize = 0x3C;
-const BRAND_NAME_END: usize = 0x50;
+/// Where the build number begins offset from the end of the info header
+const BUILD_NUMBER_OFFSET: usize = 0x61;
+/// Number of bytes reserved for the build number in the info block
+const BUILD_NUMBER_LEN: usize = 14;
 
-const DATE_START: usize = 0x51;
-const DATE_END: usize = 0x5B;
+/// Where the CAP file name begins offset from the end of the info header
+const CAP_NAME_OFFSET: usize = 0x88;
+/// Number of bytes reserved for the CAP file name in the info block
+const CAP_NAME_LEN: usize = 12;
 
-const BUILD_NUMBER_START: usize = 0x5C;
-const BUILD_NUMBER_END: usize = 0x69;
-
-const CAP_NAME_START: usize = 0x83;
-const CAP_NAME_END: usize = 0x8F;
-
-/// Information describing the
+/// Information describing the BIOS/EFI file as read from its info block.
 #[derive(Debug)]
 pub struct BiosInfo {
     /// Name of target motherboard
@@ -92,7 +102,9 @@ fn trim_after_null(s: &str) -> String {
     trimmed
 }
 
-fn bytes_to_string(bytes: &Vec<u8>, range: Range<usize>) -> String {
+fn bytes_to_string(bytes: &Vec<u8>, read_pos: usize, read_len: usize) -> String {
+    let range = read_pos..(read_pos + read_len);
+
     let chunk = &bytes[range];
     let tmp_str = String::from_utf8_lossy(chunk);
 
@@ -100,40 +112,95 @@ fn bytes_to_string(bytes: &Vec<u8>, range: Range<usize>) -> String {
 }
 
 impl BiosInfo {
+    /// Seeks through the input file until the `$BOOTEFI$` header is found
+    ///
+    /// # Arguments
+    ///   - `reader` - reader to seek on
+    ///
+    /// # Returns
+    /// An Option enum containing the current seek position in the BufReader if the block was found
+    fn seek_to_bootefi_block(reader: &mut BufReader<&mut File>) -> Option<usize> {
+        let mut mini_buf = [0u8; 1];
+        let mut buf = [0u8; INFO_HEADER_LEN];
+
+        let mut read_pos = 0;
+        loop {
+            // Check if the current byte is '$'
+            match reader.read_exact(&mut mini_buf) {
+                Ok(_) => {}
+                Err(err) => match err.kind() {
+                    ErrorKind::UnexpectedEof => {
+                        return None;
+                    }
+                    _ => {}
+                },
+            }
+            if mini_buf[0] != 0x24 {
+                // Current byte is not '$'
+                read_pos += 1;
+                continue;
+            }
+            // Step back 1 byte to compare the entire 9-byte segment
+            reader
+                .seek_relative(-1)
+                .expect("Failed to step reader back");
+
+            // Reads 9 bytes into 'buf'. If EoF is encountered, break the loop and return 'None'
+            match reader.read_exact(&mut buf) {
+                Ok(_) => {}
+                Err(err) => match err.kind() {
+                    ErrorKind::UnexpectedEof => {
+                        return None;
+                    }
+                    _ => {}
+                },
+            }
+
+            read_pos += INFO_HEADER_LEN;
+
+            // Determine if 'buf' matches "$BOOTEFI$"
+            if buf == BIOS_INFO_HEADER {
+                return Some(read_pos);
+            }
+        }
+    }
+
     pub fn from_file(bios_file: &mut File) -> Result<Self, std::io::Error> {
         // Read in raw bytes of info struct
         let mut reader = BufReader::new(bios_file);
-        let read_size = BIOS_INFO_END - BIOS_INFO_START;
-        let mut info_chunk = Vec::with_capacity(read_size);
+        match BiosInfo::seek_to_bootefi_block(&mut reader) {
+            Some(pos) => pos,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "Missing $BOOTEFI$ header in file",
+                ));
+            }
+        };
 
-        reader.seek_relative(BIOS_INFO_START as i64)?;
-        reader.take(read_size as u64).read_to_end(&mut info_chunk)?;
+        let mut info_chunk = Vec::with_capacity(BIOS_INFO_SIZE);
+
+        reader
+            .take(BIOS_INFO_SIZE as u64)
+            .read_to_end(&mut info_chunk)?;
 
         // Read each field out of the info chunk
-        let board_name = bytes_to_string(&info_chunk, BOARD_NAME_START..BOARD_NAME_END);
-        let brand = trim_after_null(&String::from_utf8_lossy(
-            &info_chunk[BRAND_NAME_START..BRAND_NAME_END],
-        ));
+        let board_name = bytes_to_string(&info_chunk, BOARD_NAME_OFFSET, BOARD_NAME_LEN);
+        let brand = bytes_to_string(&info_chunk, BRAND_NAME_OFFSET, BRAND_NAME_LEN);
 
-        let build_date =
-            trim_after_null(&String::from_utf8_lossy(&info_chunk[DATE_START..DATE_END]));
+        let build_date = bytes_to_string(&info_chunk, DATE_OFFSET, DATE_LEN);
         let build_date =
             NaiveDate::parse_from_str(&build_date, "%m/%d/%Y").unwrap_or(NaiveDate::default());
 
-        let build_num = trim_after_null(&String::from_utf8_lossy(
-            &info_chunk[BUILD_NUMBER_START..BUILD_NUMBER_END],
-        ));
-
-        let cap_name = trim_after_null(&String::from_utf8_lossy(
-            &info_chunk[CAP_NAME_START..CAP_NAME_END],
-        ));
+        let build_number = bytes_to_string(&info_chunk, BUILD_NUMBER_OFFSET, BUILD_NUMBER_LEN);
+        let cap_name = bytes_to_string(&info_chunk, CAP_NAME_OFFSET, CAP_NAME_LEN);
 
         Ok(BiosInfo {
-            board_name: board_name.to_string(),
-            brand: brand.to_string(),
-            build_date: build_date,
-            build_number: build_num.to_string(),
-            expected_name: cap_name.to_string(),
+            board_name,
+            brand,
+            build_date,
+            build_number,
+            expected_name: cap_name,
         })
     }
 
