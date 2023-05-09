@@ -11,6 +11,10 @@ categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.release]
+opt-level = 3
+lto = true
+
 [dependencies]
 chrono = "0.4.23"
 clap = { version = "4.0.32", features = ["derive"] }
