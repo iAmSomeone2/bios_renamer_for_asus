@@ -2,12 +2,24 @@
 
 Cross-platform Rust implementation of ASUS' Windows-only BIOS renamer utility.
 
+## Purpose
+
+Modern ASUS motherboards expect BIOS updates to have a specific name; however, ASUS uses more descriptive,
+but incompatible, file names in their official downloads. To resolve this, they also provide a small tool which
+will rename the file to match what the target motherboard expects.  
+
+Unfortunately, the official tool from ASUS is Windows-only. If, for example, the target motherboard is being used for a Linux server,
+and one’s other computers are Macs or Linux-based, then the official tool cannot be used to prepare BIOS updates.
+
+That's where this tool comes in! Utilizing Rust and a platform-agnostic design, it can be built and ran on Windows,
+macOS, and Linux; providing the exact same functionality as the official tool regardless of OS.
+
 ## Usage
 Before you can use this, you need to compile the code to create an executable.
 
 ### Install Rust on Unix-like OSs: Linux, macOS, etc.
 
-```bash
+```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
