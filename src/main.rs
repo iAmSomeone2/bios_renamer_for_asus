@@ -27,7 +27,7 @@ use std::process::ExitCode;
 
 mod bios;
 
-/// Cross-platform BIOS file renamer for ASUS motherboards
+/// Cross-platform BIOS file renaming tool for ASUS motherboards
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -39,8 +39,12 @@ struct Cli {
     out_dir: Option<PathBuf>,
 
     /// Copy the BIOS file instead of moving it
-    #[arg(short, long, action = ArgAction::SetTrue)]
-    copy: Option<bool>,
+    #[arg(short, long, action = ArgAction::SetTrue, default_value = "false")]
+    copy: bool,
+
+    /// Do not show BIOS file details
+    #[arg(long, action = ArgAction::SetTrue, default_value = "false")]
+    hide_details: bool,
 }
 
 fn main() -> ExitCode {
@@ -72,7 +76,7 @@ fn main() -> ExitCode {
     };
 
     if !is_valid {
-        eprintln!("INVALID FILE: provided file is not the expected size");
+        eprintln!("INVALID PATH: provided path does not point to a file");
         return ExitCode::FAILURE;
     }
 
@@ -85,6 +89,7 @@ fn main() -> ExitCode {
     };
     // Close the file by dropping it
     drop(bios_file);
+
 
     // Handle the user setting a target directory
     let mut output_path = match cli.bios_path.parent() {
@@ -102,11 +107,16 @@ fn main() -> ExitCode {
         None => {}
     }
 
+    // Print file info
+    if !cli.hide_details {
+        println!("\n{bios_info}\n");
+    }
+
     // Rename source file
     output_path.push(bios_info.get_expected_name());
     println!("Output path: {}", &output_path.display());
 
-    let should_copy = cli.copy.unwrap_or(false);
+    let should_copy = cli.copy;
 
     if should_copy {
         match std::fs::copy(&bios_path, &output_path) {
@@ -119,6 +129,7 @@ fn main() -> ExitCode {
             }
         };
     } else {
+        // TODO: figure out how to handle when a user wishes to move the file to an external drive
         match std::fs::rename(&bios_path, &output_path) {
             Ok(_) => {
                 println!("BIOS file moved to: {}", &output_path.display());
