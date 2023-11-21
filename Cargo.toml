@@ -16,5 +16,5 @@ opt-level = 3
 lto = true
 
 [dependencies]
-chrono = "0.4.23"
-clap = { version = "4.0.32", features = ["derive"] }
+chrono = "0.4.31"
+clap = { version = "4.4.8", features = ["derive"] }
