@@ -25,6 +25,7 @@ use std::{
     fs::File,
     io::{BufReader, ErrorKind, Read},
 };
+use std::fmt::{Display, Formatter};
 
 const INFO_HEADER_LEN: usize = 9;
 /// Byte array used to search for the start of the BIOS info block
@@ -32,9 +33,6 @@ const BIOS_INFO_HEADER: [u8; INFO_HEADER_LEN] =
     [0x24, 0x42, 0x4F, 0x4F, 0x54, 0x45, 0x46, 0x49, 0x24]; // "$BOOTEFI$"
 /// Total size of the info block minus the header
 const BIOS_INFO_SIZE: usize = 158;
-
-/// All recent BIOS/UEFI files from ASUS are this exact size. Unused space in the file is filled with 0xFF values.
-const EXPECTED_FILE_SIZE: u64 = 33558528;
 
 /// Where the board name begins offset from the end of the info header
 const BOARD_NAME_OFFSET: usize = 0x05;
@@ -82,6 +80,15 @@ pub struct BiosInfo {
     ///     - "TGX570PW.CAP"
     ///     - "C8DH.CAP"
     expected_name: String,
+}
+
+impl Display for BiosInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+               "Board name: {}\nBrand: {}\nBuild date: {}\nBuild number: {}\nExpected name: {}",
+            self.board_name, self.brand, self.build_date, self.build_number, self.expected_name
+        )
+    }
 }
 
 /// Returns a new String where all characters after the first NULL have been removed
@@ -169,7 +176,7 @@ impl BiosInfo {
         // Read in raw bytes of info struct
         let mut reader = BufReader::new(bios_file);
         match BiosInfo::seek_to_bootefi_block(&mut reader) {
-            Some(pos) => pos,
+            Some(_pos) => {},
             None => {
                 return Err(std::io::Error::new(
                     ErrorKind::InvalidData,
@@ -222,9 +229,5 @@ impl BiosInfo {
 pub fn is_file_valid(bios_file: &File) -> Result<bool, std::io::Error> {
     let file_info = bios_file.metadata()?;
 
-    return if !file_info.is_file() {
-        Ok(false)
-    } else {
-        Ok(file_info.len() == EXPECTED_FILE_SIZE)
-    };
+    Ok(file_info.is_file())
 }
