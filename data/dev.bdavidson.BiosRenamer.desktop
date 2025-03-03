@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=BIOS Renamer
-Comment=BIOS renamer for ASUS motherboards
+Comment=BIOS renaming tool for ASUS motherboards
 Type=Application
 Exec=rename-bios-gui
 Terminal=false

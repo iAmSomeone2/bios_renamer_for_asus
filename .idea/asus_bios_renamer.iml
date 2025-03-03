@@ -7,6 +7,7 @@
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/.flatpak-builder" />
       <excludeFolder url="file://$MODULE_DIR$/flatpak-build" />
+      <excludeFolder url="file://$MODULE_DIR$/pgo-data" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

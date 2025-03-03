@@ -1,3 +1,7 @@
 {
-  "recommendations": ["rust-lang.rust-analyzer"]
+  "recommendations": [
+    "tamasfe.even-better-toml",
+    "vadimcn.vscode-lldb",
+    "rust-lang.rust-analyzer"
+  ]
 }

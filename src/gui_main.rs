@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2021-2024 Brenden Davidson
+// Copyright (c) 2021-2025 Brenden Davidson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -269,10 +269,10 @@ impl App {
 
 #[relm4::component(async)]
 impl AsyncComponent for App {
-    type Init = ();
+    type CommandOutput = CommandMsg;
     type Input = AppInput;
     type Output = InfoState;
-    type CommandOutput = CommandMsg;
+    type Init = ();
 
     view! {
         adw::ApplicationWindow {
@@ -293,6 +293,8 @@ impl AsyncComponent for App {
                         set_margin_all: 8,
 
                         gtk::Button::with_label("Select file...") {
+                            set_icon_name: "document-open",
+
                             #[watch]
                             set_sensitive: !model.loading,
                             connect_clicked => Self::Input::SelectFile,
@@ -318,7 +320,8 @@ impl AsyncComponent for App {
                     },
 
                     #[name = "select_output_btn"]
-                    gtk::Button::with_label("Copy and rename file...") {
+                    gtk::Button::from_icon_name("Copy and rename file...") {
+                        set_icon_name: "document-save-as",
                         #[watch]
                         set_sensitive: model.has_valid_input && !model.loading,
                         connect_clicked => Self::Input::CopyAndRename,
